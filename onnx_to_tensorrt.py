@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 from __future__ import print_function
 import time
 import numpy as np
@@ -12,8 +10,9 @@ from yolov3_to_onnx import download_file
 from data_processing import PreprocessYOLO, PostprocessYOLO, ALL_CATEGORIES
 
 import sys, os
-sys.path.insert(1, os.path.join(sys.path[0], ".."))
 import common
+
+sys.path.insert(1, os.path.join(sys.path[0], ".."))
 
 TRT_LOGGER = trt.Logger()
 
@@ -77,6 +76,7 @@ def get_engine(onnx_file_path, engine_file_path=""):
     else:
         return build_engine()
 
+
 def main():
     """Create a TensorRT engine for ONNX-based YOLOv3-608 and run inference."""
 
@@ -126,10 +126,11 @@ def main():
     # Run the post-processing algorithms on the TensorRT outputs and get the bounding box details of detected objects
     boxes, classes, scores = postprocessor.process(trt_outputs, (shape_orig_WH))
     # Draw the bounding boxes onto the original input image and save it as a PNG file
-    # obj_detected_img = draw_bboxes(image_raw, boxes, scores, classes, ALL_CATEGORIES)
-    # output_image_path = 'dog_bboxes.png'
-    # obj_detected_img.save(output_image_path, 'PNG')
-    # print('Saved image with bounding boxes of detected objects to {}.'.format(output_image_path))
+    obj_detected_img = draw_bboxes(image_raw, boxes, scores, classes, ALL_CATEGORIES)
+    output_image_path = 'dog_bboxes.png'
+    obj_detected_img.save(output_image_path, 'PNG')
+    print('Saved image with bounding boxes of detected objects to {}.'.format(output_image_path))
+
 
 if __name__ == '__main__':
     main()
