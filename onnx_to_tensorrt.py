@@ -1,20 +1,23 @@
 from __future__ import print_function
-import time
+import sys
+import os
+
 import numpy as np
 import tensorrt as trt
 import pycuda.driver as cuda
 import pycuda.autoinit
 from PIL import ImageDraw
+from bistiming import Stopwatch
 
 from yolov3_to_onnx import download_file
 from data_processing import PreprocessYOLO, PostprocessYOLO, ALL_CATEGORIES
 
-import sys, os
 import common
 
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 
 TRT_LOGGER = trt.Logger()
+
 
 def draw_bboxes(image_raw, bboxes, confidences, categories, all_categories, bbox_color='blue'):
     """Draw the bounding boxes on the original input image and return it.
@@ -43,6 +46,7 @@ def draw_bboxes(image_raw, bboxes, confidences, categories, all_categories, bbox
         draw.text((left, top - 12), '{0} {1:.2f}'.format(all_categories[category], score), fill=bbox_color)
 
     return image_raw
+
 
 def get_engine(onnx_file_path, engine_file_path=""):
     """Attempts to load a serialized engine if available, otherwise builds a new TensorRT engine and saves it."""
@@ -84,8 +88,7 @@ def main():
     onnx_file_path = 'yolov3.onnx'
     engine_file_path = "yolov3.trt"
     # Download a dog image and save it to the following file path:
-    input_image_path = download_file('dog.jpg',
-        'https://github.com/pjreddie/darknet/raw/f86901f6177dfc6116360a13cc06ab680e0c86b0/data/dog.jpg', checksum_reference=None)
+    input_image_path = download_file('dog.jpg', 'https://github.com/pjreddie/darknet/raw/f86901f6177dfc6116360a13cc06ab680e0c86b0/data/dog.jpg', checksum_reference=None)  #noqa
 
     # Two-dimensional tuple with the target network's (spatial) input resolution in HW ordered
     input_resolution_yolov3_HW = (608, 608)
@@ -101,15 +104,20 @@ def main():
     # Do inference with TensorRT
     trt_outputs = []
     with get_engine(onnx_file_path, engine_file_path) as engine, engine.create_execution_context() as context:
-        inputs, outputs, bindings, stream = common.allocate_buffers(engine)
+        # stores engine to file
+        engine_output_dest = "yolo_v3.engine"
+        print("stores the engine to file: %s" % (engine_output_dest))
+        with open(engine_output_dest, "wb") as f:
+            f.write(engine.serialize())
+
         # Do inference
-        print('Running inference on image {}...'.format(input_image_path))
-        # Set host input to the image. The common.do_inference function will copy the input to the GPU before executing.
-        inputs[0].host = image
-        # start = time.time()
-        trt_outputs = common.do_inference(context, bindings=bindings, inputs=inputs, outputs=outputs, stream=stream)
-        # print("time: %.2f s" %(time.time()-start))
-        print(trt_outputs)
+        with Stopwatch('Running inference on image {}...'.format(input_image_path)):
+            inputs, outputs, bindings, stream = common.allocate_buffers(engine)
+            # Set host input to the image. The common.do_inference function will copy the input to the GPU before executing.
+            inputs[0].host = image
+            trt_outputs = common.do_inference(
+                context, bindings=bindings, inputs=inputs, outputs=outputs, stream=stream)
+            print(trt_outputs)
 
     # Before doing post-processing, we need to reshape the outputs as the common.do_inference will give us flat arrays.
     trt_outputs = [output.reshape(shape) for output, shape in zip(trt_outputs, output_shapes)]
