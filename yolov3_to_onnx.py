@@ -38,7 +38,7 @@ class DarkNetParser(object):
         Keyword argument:
         cfg_file_path -- path to the yolov3.cfg file as string
         """
-        with open(cfg_file_path, 'rb') as cfg_file:
+        with open(cfg_file_path) as cfg_file:
             remainder = cfg_file.read()
             while remainder is not None:
                 layer_dict, layer_name, remainder = self._next_layer(remainder)
@@ -697,7 +697,7 @@ builder = GraphBuilderONNX(output_tensor_dims)
 # and the weights file:
 yolov3_model_def = builder.build_onnx_graph(
     layer_configs=layer_configs,
-    weights_file_path="/home/yang/test/yolov3.weights",
+    weights_file_path="./yolov3.weights",
     verbose=True)
 # Once we have the model definition, we do not need the builder anymore:
 del builder
@@ -709,4 +709,3 @@ del builder
 output_file_path = 'yolov3.onnx'
 with open(output_file_path, 'wb') as f:
     f.write(yolov3_model_def.SerializeToString())
-
