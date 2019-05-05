@@ -86,7 +86,7 @@ def main():
 
     # Try to load a previously generated YOLOv3-608 network graph in ONNX format:
     onnx_file_path = 'yolov3.onnx'
-    engine_file_path = "yolov3.trt"
+    engine_file_path = "yolov3.engine"
     # Download a dog image and save it to the following file path:
     input_image_path = download_file('dog.jpg', 'https://github.com/pjreddie/darknet/raw/f86901f6177dfc6116360a13cc06ab680e0c86b0/data/dog.jpg', checksum_reference=None)  #noqa
 
@@ -104,12 +104,6 @@ def main():
     # Do inference with TensorRT
     trt_outputs = []
     with get_engine(onnx_file_path, engine_file_path) as engine, engine.create_execution_context() as context:
-        # stores engine to file
-        engine_output_dest = "yolo_v3.engine"
-        print("stores the engine to file: %s" % (engine_output_dest))
-        with open(engine_output_dest, "wb") as f:
-            f.write(engine.serialize())
-
         # Do inference
         with Stopwatch('Running inference on image {}...'.format(input_image_path)):
             inputs, outputs, bindings, stream = common.allocate_buffers(engine)

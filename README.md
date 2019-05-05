@@ -61,6 +61,12 @@ Additionally, the `yolov3_to_onnx.py` does not support Python 3.
 	Saved image with bounding boxes of detected objects to dog_bboxes.jpg.
 	```
 
+# Wrapper with eyewitness
+once the engine file were generated at ./yolov3.engine
+```bash
+python naive_detector.py --engine_file yolov3.engine
+```
+
 
 # References
 

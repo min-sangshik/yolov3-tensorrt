@@ -4,3 +4,4 @@ pycuda==2018.1.1
 Pillow>=5.2.0
 wget>=3.2
 bistiming
+eyewitness==1.0.8
