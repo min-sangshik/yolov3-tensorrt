@@ -1,6 +1,8 @@
 import argparse
 
 import arrow
+import pycuda.driver as cuda  # noqa, must be imported
+import pycuda.autoinit  # noqa, must be imported
 import tensorrt as trt
 import numpy as np
 from bistiming import Stopwatch
