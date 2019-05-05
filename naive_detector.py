@@ -34,6 +34,7 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
         with open(engine_file, 'rb') as f, trt.Runtime(TRT_LOGGER) as runtime:
             self.engine = runtime.deserialize_cuda_engine(f.read())
 
+        self.threshold = threshold
         postprocessor_args = {
             # A list of 3 three-dimensional tuples for the YOLO masks
             "yolo_masks": [(6, 7, 8), (3, 4, 5), (0, 1, 2)],
@@ -41,7 +42,7 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
             "yolo_anchors": [(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
                              (59, 119), (116, 90), (156, 198), (373, 326)],
             # Threshold for object coverage, float value between 0 and 1
-            "obj_threshold": 0.6,
+            "obj_threshold": self.threshold,
             # Threshold for non-max suppression algorithm, float value between 0 and 1
             "nms_threshold": 0.5,
             "yolo_input_resolution": image_shape}
@@ -79,8 +80,7 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
             x2 = min(image_raw_width, np.floor(x_coord + width + 0.5).astype(int))
             y2 = min(image_raw_height, np.floor(y_coord + height + 0.5).astype(int))
 
-            if score > self.threshold:
-                detected_objects.append(BoundedBoxObject(x1, y1, x2, y2, label, score, ''))
+            detected_objects.append(BoundedBoxObject(x1, y1, x2, y2, label, score, ''))
 
         image_dict = {
             'image_id': image_obj.image_id,
