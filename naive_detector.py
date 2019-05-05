@@ -100,9 +100,10 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
         image: np.array
             np.array with shape: NCHW, value between 0~1
         """
-        pil_image_obj /= 255.0  # HWC
         processed_image = resize_and_stack_image_objs(self.image_shape, [pil_image_obj])  # NHWC
         processed_image = np.transpose(processed_image, [0, 3, 1, 2])  # NCHW
+
+        processed_image /= 255.0  # normalize
         # Convert the image to row-major order, also known as "C order"
         processed_image = np.array(processed_image, dtype=np.float32, order='C')
         return processed_image
