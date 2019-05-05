@@ -49,17 +49,22 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
 
         self.postprocessor = PostprocessYOLO(**postprocessor_args)
 
+        self.inputs, self.outputs, self.bindings, self.stream = common.allocate_buffers(
+            self.engine)
+        self.context = self.engine.create_execution_context()
+
     def detect(self, image_obj) -> DetectionResult:
         image_raw_width = image_obj.pil_image_obj.width
         image_raw_height = image_obj.pil_image_obj.height
 
-        inputs, outputs, bindings, stream = common.allocate_buffers(self.engine)
+        self.inputs[0].host = self.preprocess(image_obj.pil_image_obj)
 
-        inputs[0].host = self.preprocess(image_obj.pil_image_obj)
+        trt_outputs = common.do_inference(
+            self.context, bindings=self.bindings, inputs=self.inputs, outputs=self.outputs,
+            stream=self.stream)
 
-        with self.engine.create_execution_context() as context:
-            trt_outputs = common.do_inference(
-                context, bindings=bindings, inputs=inputs, outputs=outputs, stream=stream)
+        # TODO: the bottleneck is the cpu implemented NMS,
+        # try to use TensorRT DetectionOutput layer
 
         # Before doing post-processing,
         # we need to reshape the outputs as the common.do_inference will give us flat arrays.
