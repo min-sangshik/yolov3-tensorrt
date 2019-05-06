@@ -71,6 +71,8 @@ python naive_detector.py --engine_file yolov3.engine
 
 ## flask server
 ```bash
+mkdir db_folder detected_image;
+
 python detector_with_flask.py  \
     --engine_file yolov3.engine \
     --db_path db_folder/example.sqlite \
@@ -78,7 +80,18 @@ python detector_with_flask.py  \
     --detector_host 0.0.0.0
 ```
 
+```bash
+# post a demo image 
+wget https://upload.wikimedia.org/wikipedia/commons/2/25/5566_and_Daily_Air_B-55507_20050820.jpg -O 5566.jpg
 
+curl -X POST \
+  http://localhost:5566/detect_post_bytes \
+  -H 'content-type: application/json' \
+  -H 'image_id: 5566--1541860143--jpg' \
+  --data-binary "@5566.jpg"
+
+# and the detected result will stored in detected_image
+```
 
 
 # References
