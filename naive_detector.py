@@ -31,9 +31,7 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
     def __init__(self, engine_file, threshold=0.5, image_shape=(608, 608)):
         self.image_shape = image_shape
         self.output_shapes = [(1, 255, 19, 19), (1, 255, 38, 38), (1, 255, 76, 76)]
-        with open(engine_file, 'rb') as f, trt.Runtime(TRT_LOGGER) as runtime:
-            self.engine = runtime.deserialize_cuda_engine(f.read())
-
+        self.engine_file = engine_file
         self.threshold = threshold
         postprocessor_args = {
             # A list of 3 three-dimensional tuples for the YOLO masks
@@ -49,11 +47,26 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
 
         self.postprocessor = PostprocessYOLO(**postprocessor_args)
 
+        # set those member as None first, will be assign after build
+        self.engine = None
+        self.inputs = None
+        self.outputs = None
+        self.bindings = None
+        self.stream = None
+        self.context = None
+
+    def build(self):
+        with open(self.engine_file, 'rb') as f, trt.Runtime(TRT_LOGGER) as runtime:
+            self.engine = runtime.deserialize_cuda_engine(f.read())
         self.inputs, self.outputs, self.bindings, self.stream = common.allocate_buffers(
             self.engine)
         self.context = self.engine.create_execution_context()
 
     def detect(self, image_obj) -> DetectionResult:
+        # lazy load implementation
+        if self.engine is None:
+            self.build()
+
         image_raw_width = image_obj.pil_image_obj.width
         image_raw_height = image_obj.pil_image_obj.height
 

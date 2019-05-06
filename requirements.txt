@@ -6,3 +6,4 @@ wget>=3.2
 bistiming
 eyewitness==1.0.8
 scipy==1.2.1
+celery==4.3.0
