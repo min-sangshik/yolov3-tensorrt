@@ -63,9 +63,22 @@ Additionally, the `yolov3_to_onnx.py` does not support Python 3.
 
 # Wrapper with eyewitness
 once the engine file were generated at ./yolov3.engine
+
+## naive_detector
 ```bash
 python naive_detector.py --engine_file yolov3.engine
 ```
+
+## flask server
+```bash
+python detector_with_flask.py  \
+    --engine_file yolov3.engine \
+    --db_path db_folder/example.sqlite \
+    --drawn_image_dir detected_image \
+    --detector_host 0.0.0.0
+```
+
+
 
 
 # References
