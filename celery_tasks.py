@@ -11,10 +11,10 @@ from bistiming import Stopwatch
 from naive_detector import TensorRTYoloV3DetectorWrapper
 
 GLOBAL_OBJECT_DETECTOR = TensorRTYoloV3DetectorWrapper(
-    os.environ.get('engine_file', '../yolov3.engine'))
+    os.environ.get('engine_file', 'yolov3.engine'))
 
-RAW_IMAGE_FOLDER = os.environ.get('raw_image_fodler', '../raw_image')
-DETECTED_IMAGE_FOLDER = os.environ.get('detected_image_folder', '../detected_image')
+RAW_IMAGE_FOLDER = os.environ.get('raw_image_fodler', 'raw_image')
+DETECTED_IMAGE_FOLDER = os.environ.get('detected_image_folder', 'detected_image')
 BROKER_URL = os.environ.get('broker_url', 'amqp://guest:guest@rabbitmq:5672')
 
 celery = Celery('tasks', broker=BROKER_URL)
