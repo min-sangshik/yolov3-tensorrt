@@ -15,7 +15,7 @@ GLOBAL_OBJECT_DETECTOR = TensorRTYoloV3DetectorWrapper(
 
 RAW_IMAGE_FOLDER = os.environ.get('raw_image_fodler', '../raw_image')
 DETECTED_IMAGE_FOLDER = os.environ.get('detected_image_folder', '../detected_image')
-BROKER_URL = os.environ.get('broker_url', 'amqp://guest:guset@rabbitmq:5462')
+BROKER_URL = os.environ.get('broker_url', 'amqp://guest:guest@rabbitmq:5672')
 
 celery = Celery('tasks', broker=BROKER_URL)
 
