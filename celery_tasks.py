@@ -36,12 +36,14 @@ def generate_image(channel, timestamp):
 def detect_image(params):
     channel = params.get('channel', 'demo')
     timestamp = params.get('timestamp', arrow.now().timestamp)
+    is_store_detected_image = params.get('is_store_detected_image', True)
 
     image_obj = generate_image(channel, timestamp)
 
     with Stopwatch('Running inference on image {}...'.format(image_obj.raw_image_path)):
         detection_result = GLOBAL_OBJECT_DETECTOR.detect(image_obj)
 
-    ImageHandler.draw_bbox(image_obj.pil_image_obj, detection_result.detected_objects)
-    ImageHandler.save(image_obj.pil_image_obj,
-                      "%s/%s.jpg" % (DETECTED_IMAGE_FOLDER, str(image_obj.image_id)))
+    if is_store_detected_image:
+        ImageHandler.draw_bbox(image_obj.pil_image_obj, detection_result.detected_objects)
+        ImageHandler.save(image_obj.pil_image_obj,
+                          "%s/%s.jpg" % (DETECTED_IMAGE_FOLDER, str(image_obj.image_id)))
