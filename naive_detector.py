@@ -13,7 +13,7 @@ from eyewitness.object_detector import ObjectDetector
 from eyewitness.image_utils import ImageHandler, Image, resize_and_stack_image_objs
 
 import common
-from data_processing import PostprocessYOLO, ALL_CATEGORIES
+from data_processing import (PostprocessYOLO, ALL_CATEGORIES, CATEGORY_NUM)
 
 TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
 
@@ -28,9 +28,14 @@ parser.add_argument(
 
 
 class TensorRTYoloV3DetectorWrapper(ObjectDetector):
-    def __init__(self, engine_file, threshold=0.5, image_shape=(608, 608)):
-        self.image_shape = image_shape
-        self.output_shapes = [(1, 255, 19, 19), (1, 255, 38, 38), (1, 255, 76, 76)]
+    def __init__(self, engine_file, threshold=0.14, image_shape=(608, 608)):
+        self.image_shape = image_shape  # wh
+        layer_output = CATEGORY_NUM * 3 + 15
+        self.output_shapes = [
+            (1, layer_output, *(int(i / 32) for i in image_shape)),
+            (1, layer_output, *(int(i / 16) for i in image_shape)),
+            (1, layer_output, *(int(i / 8) for i in image_shape))
+        ]
         self.engine_file = engine_file
         self.threshold = threshold
         postprocessor_args = {
@@ -70,14 +75,11 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
         image_raw_width = image_obj.pil_image_obj.width
         image_raw_height = image_obj.pil_image_obj.height
 
-        self.inputs[0].host = self.preprocess(image_obj.pil_image_obj)
+        self.inputs[0].host, scale_ratio = self.preprocess(image_obj.pil_image_obj)
 
         trt_outputs = common.do_inference(
             self.context, bindings=self.bindings, inputs=self.inputs, outputs=self.outputs,
             stream=self.stream)
-
-        # TODO: the bottleneck is the cpu implemented NMS,
-        # try to use TensorRT DetectionOutput layer
 
         # Before doing post-processing,
         # we need to reshape the outputs as the common.do_inference will give us flat arrays.
@@ -87,18 +89,28 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
         # Run the post-processing algorithms on the TensorRT outputs and get the bounding box
         # details of detected objects
         boxes, classes, scores = self.postprocessor.process(
-            trt_outputs, (image_obj.pil_image_obj.size))
+            trt_outputs, tuple(int(i / scale_ratio) for i in self.image_shape))
 
         detected_objects = []
-        for bbox, score, label_class in zip(boxes, scores, classes):
-            label = ALL_CATEGORIES[label_class]
-            x_coord, y_coord, width, height = bbox
-            x1 = max(0, np.floor(x_coord + 0.5).astype(int))
-            y1 = max(0, np.floor(y_coord + 0.5).astype(int))
-            x2 = min(image_raw_width, np.floor(x_coord + width + 0.5).astype(int))
-            y2 = min(image_raw_height, np.floor(y_coord + height + 0.5).astype(int))
+        if all(i for i in [boxes, scores, classes]):
+            for bbox, score, label_class in zip(boxes, scores, classes):
+                label = ALL_CATEGORIES[label_class]
+                x_coord, y_coord, width, height = bbox
+                x1 = max(0, np.floor(x_coord + 0.5).astype(int))
+                y1 = max(0, np.floor(y_coord + 0.5).astype(int))
+                x2 = min(image_raw_width, np.floor(x_coord + width + 0.5).astype(int))
+                y2 = min(image_raw_height, np.floor(y_coord + height + 0.5).astype(int))
 
-            detected_objects.append(BoundedBoxObject(x1, y1, x2, y2, label, score, ''))
+                # handle the edge case of padding space
+                x1 = min(image_raw_width, x1)
+                x2 = min(image_raw_width, x2)
+                if x1 == x2:
+                    continue
+                y1 = min(image_raw_height, y1)
+                y2 = min(image_raw_height, y2)
+                if y1 == y2:
+                    continue
+                detected_objects.append(BoundedBoxObject(x1, y1, x2, y2, label, score, ''))
 
         image_dict = {
             'image_id': image_obj.image_id,
@@ -109,6 +121,10 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
 
     def preprocess(self, pil_image_obj):
         """
+        since the tensorRT engine with a fixed input shape, and we don't want to resize the
+        original image directly, thus we perform a way like padding and resize the original image
+        to align the long side to the tensorrt input
+
         Parameters
         ----------
         pil_image_obj: PIL.image.object
@@ -117,14 +133,29 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
         -------
         image: np.array
             np.array with shape: NCHW, value between 0~1
+        image_resized_shape: (Int, Int)
+            resized image size, (height, weight)
         """
-        processed_image = resize_and_stack_image_objs(self.image_shape, [pil_image_obj])  # NHWC
+
+        original_image_size = (image_obj.pil_image_obj.width, image_obj.pil_image_obj.height)
+        width_scale_weight = original_image_size[0] / self.image_shape[0]
+        height_scale_weight = original_image_size[1] / self.image_shape[1]
+
+        scale_ratio = min(width_scale_weight, height_scale_weight)
+        image_resized_shape = tuple(int(i * scale_ratio) for i in original_image_size)
+
+        empty_img = np.zeros((1, 3, *self.image_shape))
+        processed_image = resize_and_stack_image_objs(
+            image_resized_shape, [pil_image_obj])  # NHWC
         processed_image = np.transpose(processed_image, [0, 3, 1, 2])  # NCHW
 
+        # insert the processed image into the empty image
+        empty_img[:, :, :image_resized_shape[1], :image_resized_shape[0]] = processed_image
+
         # Convert the image to row-major order, also known as "C order"
-        processed_image = np.array(processed_image, dtype=np.float32, order='C')
-        processed_image /= 255.0  # normalize
-        return processed_image
+        empty_img = np.array(empty_img, dtype=np.float32, order='C')
+        empty_img /= 255.0  # normalize
+        return empty_img, scale_ratio
 
     @property
     def valid_labels(self):
