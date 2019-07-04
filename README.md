@@ -98,3 +98,37 @@ curl -X POST \
 
 [^1]: Redmon, Joseph, and Ali Farhadi. "Yolov3: An incremental improvement."
 arXiv preprint arXiv:1804.02767 (2018).
+
+
+# For jetson nano
+
+## pre-requirements
+
+tested with jetpack 4.2 image [ref](https://developer.nvidia.com/embedded/jetpack)
+
+```bash
+export PATH=/usr/local/cuda-10.0/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda-10.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+
+sudo apt-get install libtiff5-dev libjpeg8-dev zlib1g-dev \
+    libfreetype6-dev liblcms2-dev libwebp-dev libharfbuzz-dev libfribidi-dev \
+    tcl8.6-dev tk8.6-dev python-tk
+
+sudo apt-get install libxml2-dev libxslt1-dev python-dev libopenblas-dev gfortran \
+    protobuf-compiler libprotoc-dev cmake
+
+pip3 install -r requirements.txt                   
+```
+
+
+## convert the image 
+
+```
+python3 yolov3_to_onnx.py
+
+# need to edit the onnx_to_tensorrt file, build the engine
+#-            builder.max_workspace_size = 1 << 30 # 1GB
+#+            builder.max_workspace_size = 1 << 28 # 256MB
+#-            builder.fp16_mode = True
+python3 onnx_to_tensorrt.py 
+```
