@@ -92,7 +92,7 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
             trt_outputs, tuple(int(i / scale_ratio) for i in self.image_shape))
 
         detected_objects = []
-        if all(i for i in [boxes, scores, classes]):
+        if all(i.shape[0] for i in [boxes, scores, classes]):
             for bbox, score, label_class in zip(boxes, scores, classes):
                 label = ALL_CATEGORIES[label_class]
                 x_coord, y_coord, width, height = bbox
