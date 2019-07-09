@@ -1,4 +1,3 @@
-import math
 from PIL import Image
 import numpy as np
 from scipy.special import expit
@@ -11,6 +10,7 @@ from scipy.special import expit
 def load_label_categories(label_file_path):
     categories = [line.rstrip('\n') for line in open(label_file_path)]
     return categories
+
 
 LABEL_FILE_PATH = 'coco_labels.txt'
 ALL_CATEGORIES = load_label_categories(LABEL_FILE_PATH)
