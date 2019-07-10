@@ -4,17 +4,17 @@ import os
 
 import numpy as np
 import tensorrt as trt
-import pycuda.driver as cuda
-import pycuda.autoinit
+import pycuda.driver as cuda  # noqa
+import pycuda.autoinit  # noqa
 from PIL import ImageDraw
 from bistiming import Stopwatch
 
 from yolov3_to_onnx import download_file
 from data_processing import PreprocessYOLO, PostprocessYOLO, ALL_CATEGORIES
 
-import common
 
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
+import common  # noqa
 
 TRT_LOGGER = trt.Logger()
 
@@ -55,7 +55,6 @@ def get_engine(onnx_file_path, engine_file_path=""):
         with trt.Builder(TRT_LOGGER) as builder, builder.create_network() as network, trt.OnnxParser(network, TRT_LOGGER) as parser:
             builder.max_workspace_size = 1 << 30 # 1GB
             builder.max_batch_size = 1
-            builder.fp16_mode = True
             # Parse model file
             if not os.path.exists(onnx_file_path):
                 print('ONNX file {} not found, please run yolov3_to_onnx.py first to generate it.'.format(onnx_file_path))
@@ -104,7 +103,6 @@ def main():
     # Do inference with TensorRT
     trt_outputs = []
     with get_engine(onnx_file_path, engine_file_path) as engine, engine.create_execution_context() as context:
-        # Do inference
         with Stopwatch('Running inference on image {}...'.format(input_image_path)):
             inputs, outputs, bindings, stream = common.allocate_buffers(engine)
             # Set host input to the image. The common.do_inference function will copy the input to the GPU before executing.

@@ -1,5 +1,5 @@
 numpy
-onnx==1.1.1
+onnx==1.4.1
 pycuda==2019.1
 wget>=3.2
 Pillow>=5.2.0
