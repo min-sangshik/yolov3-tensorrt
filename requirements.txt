@@ -1,8 +1,8 @@
 numpy
 onnx==1.1.1
-pycuda==2018.1.1
-Pillow>=5.2.0
+pycuda==2019.1
 wget>=3.2
+Pillow>=5.2.0
 bistiming
 eyewitness==1.0.8
 scipy==1.2.1
