@@ -6,10 +6,11 @@ from eyewitness.flask_server import BboxObjectDetectionFlaskWrapper
 from eyewitness.config import BBOX
 from eyewitness.detection_result_filter import FeedbackBboxDeNoiseFilter
 from eyewitness.result_handler.db_writer import BboxPeeweeDbWriter
-from eyewitness.result_handler.line_detection_result_handler import LineAnnotationSender
+
 from peewee import SqliteDatabase
 
 from naive_detector import TensorRTYoloV3DetectorWrapper
+from line_detection_result_handler import LineAnnotationSender
 
 
 # class YOLO defines the default value, so suppress any default here
