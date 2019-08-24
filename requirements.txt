@@ -4,7 +4,7 @@ pycuda==2019.1
 wget>=3.2
 Pillow>=5.2.0
 bistiming
-eyewitness==1.0.8
+eyewitness==1.1.1
 scipy==1.2.1
 celery==4.3.0
 gevent
