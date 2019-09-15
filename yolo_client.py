@@ -8,6 +8,8 @@ from PIL import Image
 from tensorrtserver.api import ServerStatusContext, ProtocolType, InferContext
 import tensorrtserver.api.model_config_pb2 as model_config
 
+from data_processing import (PostprocessYOLO, ALL_CATEGORIES, CATEGORY_NUM)
+
 FLAGS = None
 
 
@@ -180,6 +182,28 @@ if __name__ == '__main__':
         FLAGS.url, protocol, FLAGS.model_name,
         FLAGS.batch_size, FLAGS.verbose)
 
+    image_shape = (h, w)
+    layer_output = CATEGORY_NUM * 3 + 15
+    output_shapes = [
+        (1, layer_output, *(int(i / 32) for i in image_shape)),
+        (1, layer_output, *(int(i / 16) for i in image_shape)),
+        (1, layer_output, *(int(i / 8) for i in image_shape))
+    ]
+
+    postprocessor_args = {
+        # A list of 3 three-dimensional tuples for the YOLO masks
+        "yolo_masks": [(6, 7, 8), (3, 4, 5), (0, 1, 2)],
+        # A list of 9 two-dimensional tuples for the YOLO anchors
+        "yolo_anchors": [(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
+                         (59, 119), (116, 90), (156, 198), (373, 326)],
+        # Threshold for object coverage, float value between 0 and 1
+        "obj_threshold": 0.14,
+        # Threshold for non-max suppression algorithm, float value between 0 and 1
+        "nms_threshold": 0.5,
+        "yolo_input_resolution": image_shape}
+
+    postprocessor = PostprocessYOLO(**postprocessor_args)
+
     ctx = InferContext(FLAGS.url, protocol, FLAGS.model_name,
                        FLAGS.model_version, FLAGS.verbose, 0, FLAGS.streaming)
 
@@ -243,4 +267,8 @@ if __name__ == '__main__':
 
     for idx in range(len(results)):
         print("Request {}, batch size {}".format(idx, FLAGS.batch_size))
-        # postprocess(results[idx], result_filenames[idx], FLAGS.batch_size)
+        trt_outputs = [results[0][output][0] for output in sorted(results[0].keys())]
+        trt_outputs = [output.reshape(shape)
+                       for output, shape in zip(trt_outputs, output_shapes)]
+        boxes, classes, scores = postprocessor.process(trt_outputs, image_shape)
+        print(boxes)
