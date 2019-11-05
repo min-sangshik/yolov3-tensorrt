@@ -89,7 +89,7 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
         # Run the post-processing algorithms on the TensorRT outputs and get the bounding box
         # details of detected objects
         boxes, classes, scores = self.postprocessor.process(
-            trt_outputs, tuple(int(i / scale_ratio) for i in self.image_shape))
+            trt_outputs, tuple(int(i * scale_ratio) for i in self.image_shape))
 
         detected_objects = []
         if all(i.shape[0] for i in [boxes, scores, classes]):
@@ -141,8 +141,8 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
         width_scale_weight = original_image_size[0] / self.image_shape[0]
         height_scale_weight = original_image_size[1] / self.image_shape[1]
 
-        scale_ratio = min(width_scale_weight, height_scale_weight)
-        image_resized_shape = tuple(int(i * scale_ratio) for i in original_image_size)
+        scale_ratio = max(width_scale_weight, height_scale_weight)
+        image_resized_shape = tuple(int(i / scale_ratio) for i in original_image_size)
 
         empty_img = np.zeros((1, 3, *self.image_shape))
         processed_image = resize_and_stack_image_objs(
