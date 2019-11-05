@@ -33,7 +33,7 @@ def generate_image(channel, timestamp, raw_image_path=None):
     return Image(image_id, raw_image_path=raw_image_path)
 
 
-@celery.task
+@celery.task(name='detect_image')
 def detect_image(params):
     channel = params.get('channel', 'demo')
     timestamp = params.get('timestamp', arrow.now().timestamp)
