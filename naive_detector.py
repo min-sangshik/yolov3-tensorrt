@@ -136,26 +136,25 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
         image_resized_shape: (Int, Int)
             resized image size, (height, weight)
         """
-
-        original_image_size = (image_obj.pil_image_obj.width, image_obj.pil_image_obj.height)
+        original_image_size = (pil_image_obj.width, pil_image_obj.height)
         width_scale_weight = original_image_size[0] / self.image_shape[0]
         height_scale_weight = original_image_size[1] / self.image_shape[1]
 
         scale_ratio = max(width_scale_weight, height_scale_weight)
         image_resized_shape = tuple(int(i / scale_ratio) for i in original_image_size)
 
-        empty_img = np.zeros((1, 3, *self.image_shape))
+        output_img = np.zeros((1, 3, *self.image_shape))
         processed_image = resize_and_stack_image_objs(
             image_resized_shape, [pil_image_obj])  # NHWC
         processed_image = np.transpose(processed_image, [0, 3, 1, 2])  # NCHW
 
         # insert the processed image into the empty image
-        empty_img[:, :, :image_resized_shape[1], :image_resized_shape[0]] = processed_image
+        output_img[:, :, :image_resized_shape[1], :image_resized_shape[0]] = processed_image
 
         # Convert the image to row-major order, also known as "C order"
-        empty_img = np.array(empty_img, dtype=np.float32, order='C')
-        empty_img /= 255.0  # normalize
-        return empty_img, scale_ratio
+        output_img = np.array(output_img, dtype=np.float32, order='C')
+        output_img /= 255.0  # normalize
+        return output_img, scale_ratio
 
     @property
     def valid_labels(self):
