@@ -9,3 +9,4 @@ scipy==1.2.1
 celery==4.3.0
 gevent
 line-bot-sdk
+psutil
