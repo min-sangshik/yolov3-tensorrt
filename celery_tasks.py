@@ -14,7 +14,7 @@ from naive_detector import TensorRTYoloV3DetectorWrapper
 
 # leave interface for inference image shape
 INFERENCE_SHAPE = os.environ.get('inference_shape', '608,608')
-INFERENCE_SHAPE = (int(i) for i in INFERENCE_SHAPE.split(','))
+INFERENCE_SHAPE = tuple(int(i) for i in INFERENCE_SHAPE.split(','))
 assert len(INFERENCE_SHAPE) == 2
 
 # leave interface for detector threshold
