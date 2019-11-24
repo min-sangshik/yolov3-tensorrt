@@ -17,9 +17,14 @@ INFERENCE_SHAPE = os.environ.get('inference_shape', '608,608')
 INFERENCE_SHAPE = (int(i) for i in INFERENCE_SHAPE.split(','))
 assert len(INFERENCE_SHAPE) == 2
 
+# leave interface for detector threshold
+DETECTION_THRESHOLD = float(os.environ.get('threshold', 0.14))
+
 GLOBAL_OBJECT_DETECTOR = TensorRTYoloV3DetectorWrapper(
     engine_file=os.environ.get('engine_file', 'yolov3.engine'),
-    image_shape=INFERENCE_SHAPE)
+    image_shape=INFERENCE_SHAPE,
+    threshold=DETECTION_THRESHOLD
+    )
 
 RAW_IMAGE_FOLDER = os.environ.get('raw_image_fodler', 'raw_image')
 DETECTED_IMAGE_FOLDER = os.environ.get('detected_image_folder', 'detected_image')
