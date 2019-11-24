@@ -12,8 +12,14 @@ from bistiming import Stopwatch
 
 from naive_detector import TensorRTYoloV3DetectorWrapper
 
+# leave interface for inference image shape
+INFERENCE_SHAPE = os.environ.get('inference_shape', '608,608')
+INFERENCE_SHAPE = (int(i) for i in INFERENCE_SHAPE.split(','))
+assert len(INFERENCE_SHAPE) == 2
+
 GLOBAL_OBJECT_DETECTOR = TensorRTYoloV3DetectorWrapper(
-    os.environ.get('engine_file', 'yolov3.engine'))
+    engine_file=os.environ.get('engine_file', 'yolov3.engine'),
+    image_shape=INFERENCE_SHAPE)
 
 RAW_IMAGE_FOLDER = os.environ.get('raw_image_fodler', 'raw_image')
 DETECTED_IMAGE_FOLDER = os.environ.get('detected_image_folder', 'detected_image')
