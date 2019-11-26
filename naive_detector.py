@@ -28,8 +28,9 @@ parser.add_argument(
 
 
 class TensorRTYoloV3DetectorWrapper(ObjectDetector):
-    def __init__(self, engine_file, threshold=0.14, image_shape=(608, 608)):
+    def __init__(self, engine_file, threshold=0.14, image_shape=(608, 608), valid_labels=None):
         self.image_shape = image_shape  # wh
+        self.valid_labels = valid_labels
         layer_output = CATEGORY_NUM * 3 + 15
         self.output_shapes = [
             (1, layer_output, *(int(i / 32) for i in image_shape)),
@@ -95,6 +96,9 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
         if all(i is not None and i.shape[0] > 0 for i in [boxes, scores, classes]):
             for bbox, score, label_class in zip(boxes, scores, classes):
                 label = ALL_CATEGORIES[label_class]
+                if self.valid_labels is not None:
+                    if label not in self.valid_labels:
+                        continue
                 x_coord, y_coord, width, height = bbox
                 x1 = max(0, np.floor(x_coord + 0.5).astype(int))
                 y1 = max(0, np.floor(y_coord + 0.5).astype(int))
