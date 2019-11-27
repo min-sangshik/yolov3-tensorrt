@@ -30,7 +30,10 @@ parser.add_argument(
 class TensorRTYoloV3DetectorWrapper(ObjectDetector):
     def __init__(self, engine_file, threshold=0.14, image_shape=(608, 608), valid_labels=None):
         self.image_shape = image_shape  # wh
-        self.valid_labels = valid_labels
+        if valid_labels:
+            self.valid_labels_ = valid_labels
+        else:
+            self.valid_labels_ = set(ALL_CATEGORIES)
         layer_output = CATEGORY_NUM * 3 + 15
         self.output_shapes = [
             (1, layer_output, *(int(i / 32) for i in image_shape)),
@@ -162,7 +165,7 @@ class TensorRTYoloV3DetectorWrapper(ObjectDetector):
 
     @property
     def valid_labels(self):
-        return set(ALL_CATEGORIES)
+        return self.valid_labels_
 
 
 if __name__ == '__main__':
